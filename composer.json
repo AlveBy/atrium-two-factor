@@ -1,0 +1,63 @@
+{
+    "name": "alveby/atrium-2fa",
+    "description": "Second sign-in factor for Atrium, for the admin and the personal account: authenticator apps (TOTP), passkeys, a code by e-mail or SMS, recovery codes, trusted devices, a sign-in log, and a passwordless e-mail code",
+    "type": "atrium-module",
+    "license": "MIT",
+    "homepage": "https://github.com/AlveBy/atrium",
+    "support": {
+        "issues": "https://github.com/AlveBy/atrium/issues",
+        "source": "https://github.com/AlveBy/atrium"
+    },
+    "keywords": [
+        "laravel",
+        "admin",
+        "2fa",
+        "mfa",
+        "totp",
+        "webauthn",
+        "passkeys",
+        "passwordless",
+        "security",
+        "i18n"
+    ],
+    "require": {
+        "php": "^8.3",
+        "ext-openssl": "*",
+        "illuminate/support": "^13.0",
+        "alveby/atrium": "^0.1",
+        "bacon/bacon-qr-code": "^3.0",
+        "lbuchs/webauthn": "^2.2"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^11.0",
+        "phpunit/phpunit": "^12.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Atrium\\TwoFactor\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Atrium\\TwoFactor\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "atrium": {
+            "key": "two_factor",
+            "title": "atrium-2fa::two-factor.module",
+            "migrations": "database/migrations",
+            "settings": "Atrium\\TwoFactor\\TwoFactorSettings"
+        },
+        "laravel": {
+            "providers": [
+                "Atrium\\TwoFactor\\TwoFactorServiceProvider"
+            ]
+        },
+        "branch-alias": {
+            "dev-main": "0.1.x-dev"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
