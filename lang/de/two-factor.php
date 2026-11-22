@@ -100,6 +100,7 @@ return [
 
     'security' => [
         'title' => 'Anmeldesicherheit',
+        'demo_locked' => 'In der Demo nicht verfügbar. Hier kann niemand eine Möglichkeit zur Bestätigung der Anmeldung hinzufügen, entfernen oder zurücksetzen, damit der nächste Besucher sich immer anmelden kann.',
         'required' => 'Für Ihr Konto ist ein zweiter Schritt erforderlich: Behalten Sie mindestens eine Möglichkeit, die Anmeldung zu bestätigen.',
         'optional' => 'Fügen Sie einen zweiten Schritt hinzu, um Ihr Konto auch dann zu schützen, wenn jemand Ihr Passwort erfährt.',
         'must_enrol' => 'Richten Sie einen zweiten Schritt ein, bevor Sie fortfahren: Er ist für Ihr Konto erforderlich.',

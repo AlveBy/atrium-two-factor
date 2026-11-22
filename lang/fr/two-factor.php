@@ -100,6 +100,7 @@ return [
 
     'security' => [
         'title' => 'Sécurité de la connexion',
+        'demo_locked' => 'Indisponible dans la démo. Personne ne peut y ajouter, retirer ou réinitialiser un moyen de confirmer la connexion, afin que le prochain visiteur puisse toujours se connecter.',
         'required' => 'Une seconde étape est requise pour votre compte : gardez au moins un moyen de confirmer la connexion.',
         'optional' => 'Ajoutez une seconde étape pour protéger votre compte même si quelqu\'un découvre votre mot de passe.',
         'must_enrol' => 'Configurez une seconde étape avant de continuer : elle est requise pour votre compte.',

@@ -12,6 +12,7 @@ use Atrium\TwoFactor\Http\Controllers\MagicCodeController;
 use Atrium\TwoFactor\Http\Controllers\ManageController;
 use Atrium\TwoFactor\Http\Controllers\PasskeyLoginController;
 use Atrium\TwoFactor\Http\Controllers\SecurityController;
+use Atrium\TwoFactor\Http\Middleware\LockInDemo;
 use Atrium\TwoFactor\Http\Middleware\ReloadInertiaVisits;
 use Illuminate\Support\Facades\Route;
 
@@ -49,24 +50,31 @@ Route::middleware(ReloadInertiaVisits::class)->group(function (): void {
     Route::post('passkey', [PasskeyLoginController::class, 'store'])->name('passkey.verify');
 });
 
-// The person's own security page.
+// The person's own security page. Whatever changes a factor, a recovery code
+// or a trusted device is locked in a public demo (LockInDemo).
 Route::middleware($authMiddleware)->group(function () use ($isAdmin): void {
     Route::get('security', [SecurityController::class, 'index'])->name('security');
-    Route::post('security/totp', [SecurityController::class, 'startTotp'])->name('totp.start');
-    Route::post('security/totp/confirm', [SecurityController::class, 'confirmTotp'])->name('totp.confirm');
-    Route::post('security/passkeys/options', [SecurityController::class, 'passkeyOptions'])->name('passkeys.options');
-    Route::post('security/passkeys', [SecurityController::class, 'storePasskey'])->name('passkeys.store');
-    Route::post('security/sms', [SecurityController::class, 'startSms'])->name('sms.start');
-    Route::post('security/sms/confirm', [SecurityController::class, 'confirmSms'])->name('sms.confirm');
-    Route::post('security/email', [SecurityController::class, 'enableEmail'])->name('email.enable');
-    Route::delete('security/factors/{factor}', [SecurityController::class, 'destroy'])->whereNumber('factor')->name('factors.destroy');
-    Route::post('security/recovery', [SecurityController::class, 'regenerateRecovery'])->name('recovery.regenerate');
-    Route::delete('security/devices', [SecurityController::class, 'revokeDevices'])->name('devices.revoke');
+
+    Route::middleware(LockInDemo::class)->group(function () use ($isAdmin): void {
+        Route::post('security/totp', [SecurityController::class, 'startTotp'])->name('totp.start');
+        Route::post('security/totp/confirm', [SecurityController::class, 'confirmTotp'])->name('totp.confirm');
+        Route::post('security/passkeys/options', [SecurityController::class, 'passkeyOptions'])->name('passkeys.options');
+        Route::post('security/passkeys', [SecurityController::class, 'storePasskey'])->name('passkeys.store');
+        Route::post('security/sms', [SecurityController::class, 'startSms'])->name('sms.start');
+        Route::post('security/sms/confirm', [SecurityController::class, 'confirmSms'])->name('sms.confirm');
+        Route::post('security/email', [SecurityController::class, 'enableEmail'])->name('email.enable');
+        Route::delete('security/factors/{factor}', [SecurityController::class, 'destroy'])->whereNumber('factor')->name('factors.destroy');
+        Route::post('security/recovery', [SecurityController::class, 'regenerateRecovery'])->name('recovery.regenerate');
+        Route::delete('security/devices', [SecurityController::class, 'revokeDevices'])->name('devices.revoke');
+
+        if ($isAdmin) {
+            Route::post('people/reset', [ManageController::class, 'reset'])->name('reset');
+        }
+    });
 
     // The sign-in log and resets, in the panel only.
     if ($isAdmin) {
         Route::get('log', [ManageController::class, 'log'])->name('log');
         Route::get('people', [ManageController::class, 'users'])->name('users');
-        Route::post('people/reset', [ManageController::class, 'reset'])->name('reset');
     }
 });

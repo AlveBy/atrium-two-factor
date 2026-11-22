@@ -100,6 +100,7 @@ return [
 
     'security' => [
         'title' => 'Sicurezza dell\'accesso',
+        'demo_locked' => 'Non disponibile nella demo. Qui nessuno può aggiungere, rimuovere o reimpostare un modo per confermare l’accesso, così il prossimo visitatore può sempre entrare.',
         'required' => 'Per il tuo account è richiesto un secondo passaggio: conserva almeno un modo per confermare l\'accesso.',
         'optional' => 'Aggiungi un secondo passaggio per proteggere il tuo account anche se qualcuno scopre la tua password.',
         'must_enrol' => 'Configura un secondo passaggio prima di continuare: è richiesto per il tuo account.',

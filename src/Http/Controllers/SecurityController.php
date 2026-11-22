@@ -56,6 +56,12 @@ final class SecurityController extends Controller
     {
         $guard = $this->guard($request);
         $user = $this->user($request);
+
+        // A public demo: nothing here may be changed, so there are no forms.
+        if (config('atrium.demo.enabled')) {
+            return response($this->view($request, 'security-demo'));
+        }
+
         $id = $user->getAuthIdentifier();
 
         $factors = Factor::query()->of($guard, $id)->orderBy('id')->get();

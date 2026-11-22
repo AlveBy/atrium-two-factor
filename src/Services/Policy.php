@@ -38,6 +38,11 @@ final class Policy
 
     public function required(string $guard, Authenticatable $user): bool
     {
+        // A public demo lets nobody set a factor up: requiring one would lock everybody out.
+        if (config('atrium.demo.enabled')) {
+            return false;
+        }
+
         $required = match ($this->guards->required($guard)) {
             Guards::ALL => true,
             Guards::ROLES => $this->hasRequiredRole($guard, $user),

@@ -100,6 +100,7 @@ return [
 
     'security' => [
         'title' => 'Seguridad del inicio de sesión',
+        'demo_locked' => 'No disponible en la demo. Nadie puede añadir, quitar ni restablecer aquí un método para confirmar el inicio de sesión, así el siguiente visitante siempre podrá entrar.',
         'required' => 'Tu cuenta requiere un segundo paso: conserva al menos una forma de confirmar el inicio de sesión.',
         'optional' => 'Añade un segundo paso para proteger tu cuenta aunque alguien descubra tu contraseña.',
         'must_enrol' => 'Configura un segundo paso antes de continuar: es obligatorio para tu cuenta.',

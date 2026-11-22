@@ -100,6 +100,7 @@ return [
 
     'security' => [
         'title' => 'Segurança do login',
+        'demo_locked' => 'Indisponível na demonstração. Ninguém pode adicionar, remover ou redefinir aqui uma forma de confirmar o login, para que o próximo visitante sempre consiga entrar.',
         'required' => 'Sua conta exige uma segunda etapa: mantenha pelo menos uma forma de confirmar o login.',
         'optional' => 'Adicione uma segunda etapa para proteger sua conta mesmo que alguém descubra sua senha.',
         'must_enrol' => 'Configure uma segunda etapa antes de continuar: ela é obrigatória para sua conta.',

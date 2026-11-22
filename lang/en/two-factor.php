@@ -100,6 +100,7 @@ return [
 
     'security' => [
         'title' => 'Sign-in security',
+        'demo_locked' => 'Not available in the demo. Nobody can add, remove or reset a way to confirm signing in here, so the next visitor can always get in.',
         'required' => 'A second step is required for your account: keep at least one way to confirm signing in.',
         'optional' => 'Add a second step to protect your account even if someone learns your password.',
         'must_enrol' => 'Set up a second step before you continue: it is required for your account.',

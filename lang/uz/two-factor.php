@@ -99,6 +99,7 @@ return [
 
     'security' => [
         'title' => 'Kirish xavfsizligi',
+        'demo_locked' => 'Demoda bu mavjud emas. Bu yerda hech kim kirishni tasdiqlash usulini qo‘sha, olib tashlay yoki tiklay olmaydi, shunda keyingi tashrifchi doim kira oladi.',
         'required' => 'Akkauntingiz uchun ikkinchi qadam talab qilinadi: kirishni tasdiqlashning kamida bitta usulini qoldiring.',
         'optional' => 'Birov parolingizni bilib olsa ham akkauntingizni himoya qilish uchun ikkinchi qadamni qoʻshing.',
         'must_enrol' => 'Davom etishdan oldin ikkinchi qadamni sozlang: u akkauntingiz uchun majburiy.',

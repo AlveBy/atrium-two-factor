@@ -100,6 +100,7 @@ return [
 
     'security' => [
         'title' => 'Bezpieczeństwo logowania',
+        'demo_locked' => 'Niedostępne w wersji demo. Nikt nie może tu dodać, usunąć ani zresetować sposobu potwierdzania logowania, dzięki czemu następny gość zawsze się zaloguje.',
         'required' => 'Twoje konto wymaga drugiego kroku: zachowaj co najmniej jeden sposób potwierdzania logowania.',
         'optional' => 'Dodaj drugi krok, aby chronić konto nawet wtedy, gdy ktoś pozna Twoje hasło.',
         'must_enrol' => 'Skonfiguruj drugi krok, zanim przejdziesz dalej: jest wymagany dla Twojego konta.',

@@ -99,6 +99,7 @@ return [
 
     'security' => [
         'title' => 'Giriş güvenliği',
+        'demo_locked' => 'Demoda kullanılamaz. Burada kimse oturum açmayı doğrulama yöntemi ekleyemez, kaldıramaz veya sıfırlayamaz; böylece sonraki ziyaretçi her zaman giriş yapabilir.',
         'required' => 'Hesabınız için ikinci bir adım gerekiyor: girişi onaylamanın en az bir yolunu koruyun.',
         'optional' => 'Biri parolanızı öğrense bile hesabınızı korumak için ikinci bir adım ekleyin.',
         'must_enrol' => 'Devam etmeden önce ikinci bir adım kurun: hesabınız için zorunludur.',
