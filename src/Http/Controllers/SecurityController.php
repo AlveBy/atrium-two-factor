@@ -59,7 +59,9 @@ final class SecurityController extends Controller
 
         // A public demo: nothing here may be changed, so there are no forms.
         if (config('atrium.demo.enabled')) {
-            return response($this->view($request, 'security-demo'));
+            return $this->inPanel($request)
+                ? Inertia::render('Admin/TwoFactor/DemoLocked', ['t' => trans('atrium-2fa::two-factor')])
+                : response($this->view($request, 'security-demo'));
         }
 
         $id = $user->getAuthIdentifier();

@@ -18,6 +18,7 @@ use Atrium\TwoFactor\Services\Policy;
 use Atrium\TwoFactor\Services\RecoveryCodes;
 use Atrium\TwoFactor\Tests\TestCase;
 use Illuminate\Support\Carbon;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
@@ -125,12 +126,11 @@ final class DemoLockTest extends TestCase
 
         $this->get(route('admin.two-factor.security'))
             ->assertOk()
-            ->assertSee('dusk="a2f-demo-locked"', false)
-            ->assertSee(__('atrium-2fa::two-factor.security.demo_locked'))
-            ->assertDontSee('<form', false)
-            ->assertDontSee('a2f-totp-start')
-            ->assertDontSee('a2f-recovery-regenerate')
-            ->assertDontSee('a2f-devices-revoke');
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/TwoFactor/DemoLocked', false)
+                ->where('t.security.demo_locked', __('atrium-2fa::two-factor.security.demo_locked'))
+                ->missing('urls')
+                ->missing('factors'));
     }
 
     public function test_the_security_page_of_a_site_that_is_not_a_demo_has_its_forms(): void
@@ -140,8 +140,34 @@ final class DemoLockTest extends TestCase
 
         $this->get(route('admin.two-factor.security'))
             ->assertOk()
-            ->assertSee('dusk="a2f-totp-start"', false)
-            ->assertSee('dusk="a2f-recovery-regenerate"', false)
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/TwoFactor/Security', false)
+                ->where('urls', fn ($urls): bool => $urls['totp.start'] === route('admin.two-factor.totp.start')
+                    && $urls['recovery.regenerate'] === route('admin.two-factor.recovery.regenerate')));
+    }
+
+    public function test_the_security_page_of_a_site_visitor_on_a_demo_says_so_and_has_no_forms(): void
+    {
+        $this->demo();
+        $person = $this->person();
+        $this->totp($person, 'people');
+
+        $this->actingAs($person, 'people')->get(route('atrium-2fa.people.security'))
+            ->assertOk()
+            ->assertSee('dusk="a2f-demo-locked"', false)
+            ->assertSee(__('atrium-2fa::two-factor.security.demo_locked'))
+            ->assertDontSee('<form', false);
+    }
+
+    public function test_the_security_page_of_a_site_visitor_off_a_demo_has_its_forms(): void
+    {
+        $this->demo(false);
+        $person = $this->person();
+        $this->totp($person, 'people');
+
+        $this->actingAs($person, 'people')->get(route('atrium-2fa.people.security'))
+            ->assertOk()
+            ->assertSee('<form', false)
             ->assertDontSee('dusk="a2f-demo-locked"', false);
     }
 
