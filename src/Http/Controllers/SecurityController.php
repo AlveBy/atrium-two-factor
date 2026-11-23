@@ -29,6 +29,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -50,7 +52,7 @@ final class SecurityController extends Controller
         parent::__construct($guards);
     }
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|InertiaResponse
     {
         $guard = $this->guard($request);
         $user = $this->user($request);
@@ -59,22 +61,78 @@ final class SecurityController extends Controller
         $factors = Factor::query()->of($guard, $id)->orderBy('id')->get();
         $totpSetup = $factors->first(fn (Factor $f): bool => $f->type === 'totp' && $f->confirmed_at === null);
         $issuer = (string) (config('atrium-2fa.totp.issuer') ?: Person::siteName());
+        $confirmed = $factors->filter(fn (Factor $f): bool => $f->confirmed_at !== null)->values();
+        $recoveryLeft = $this->recovery->remaining($guard, $id);
+        $devices = TrustedDevice::query()->where('guard', $guard)->where('user_id', $id)->where('expires_at', '>', Carbon::now())->latest('id')->get();
+        $events = Event::query()->where('guard', $guard)->where('user_id', $id)->latest('id')->limit(10)->get();
+        $allowed = array_map(fn ($factor): string => $factor->key(), $this->policy->allowed($guard));
+        $required = $this->policy->required($guard, $user);
+        $mustEnrol = (bool) $request->session()->get(app(Challenge::class)->enrolKey($guard));
+        $smsSetup = $factors->first(fn (Factor $f): bool => $f->type === 'sms' && $f->confirmed_at === null);
+        $totpQr = $totpSetup !== null ? Qr::svg(Totp::fromConfig()->uri((string) $totpSetup->secret, $issuer, Person::email($user))) : null;
+        $recoveryCodes = $request->session()->get('atrium-2fa.recovery_codes');
+        $trustedDays = $this->guards->trustedDays($guard);
+        $passwordless = $this->guards->passwordless($guard);
+
+        if ($this->inPanel($request)) {
+            return Inertia::render('Admin/TwoFactor/Security', [
+                't' => trans('atrium-2fa::two-factor'),
+                'status' => $request->session()->get('atrium-2fa.status'),
+                'error' => $request->session()->get('atrium-2fa.error'),
+                'mustEnrol' => $mustEnrol,
+                'required' => $required,
+                'passwordless' => $passwordless,
+                'allowed' => $allowed,
+                'recoveryCodes' => $recoveryCodes,
+                'factors' => $confirmed->map(function (Factor $f) use ($guard): array {
+                    /** @var Carbon $added Only confirmed factors are listed. */
+                    $added = $f->confirmed_at;
+
+                    return [
+                        'id' => $f->id,
+                        'type' => $f->type,
+                        'name' => $f->name,
+                        'added_at' => $added->isoFormat('LL'),
+                        'used_at' => $f->last_used_at?->isoFormat('LL'),
+                        'remove_url' => $this->guards->route($guard, 'factors.destroy', ['factor' => $f->id]),
+                    ];
+                })->all(),
+                'totp' => $totpSetup === null ? null : [
+                    'qr' => $totpQr,
+                    'secret' => trim(chunk_split((string) $totpSetup->secret, 4, ' ')),
+                ],
+                'sms' => $smsSetup === null ? null : ['phone' => Person::maskPhone((string) $smsSetup->secret)],
+                'email' => Person::maskEmail(Person::email($user)),
+                'recoveryLeft' => trans_choice('atrium-2fa::two-factor.security.recovery_left', $recoveryLeft),
+                'trustedDays' => $trustedDays,
+                'devices' => $devices->map(fn (TrustedDevice $d): array => [
+                    'id' => $d->id,
+                    'name' => $d->name,
+                    'ip' => $d->ip,
+                    'until' => $d->expires_at->isoFormat('LL'),
+                ])->all(),
+                'events' => $this->eventRows($events, null),
+                'urls' => collect(['totp.start', 'totp.confirm', 'passkeys.options', 'passkeys.store', 'sms.start', 'sms.confirm', 'email.enable', 'recovery.regenerate', 'devices.revoke'])
+                    ->mapWithKeys(fn (string $name): array => [$name => $this->guards->route($guard, $name)])
+                    ->all(),
+            ]);
+        }
 
         return response($this->view($request, 'security', [
             'user' => $user,
-            'allowed' => array_map(fn ($factor): string => $factor->key(), $this->policy->allowed($guard)),
-            'required' => $this->policy->required($guard, $user),
-            'mustEnrol' => (bool) $request->session()->get(app(Challenge::class)->enrolKey($guard)),
-            'factors' => $factors->filter(fn (Factor $f): bool => $f->confirmed_at !== null)->values(),
+            'allowed' => $allowed,
+            'required' => $required,
+            'mustEnrol' => $mustEnrol,
+            'factors' => $confirmed,
             'totpSetup' => $totpSetup,
-            'totpQr' => $totpSetup !== null ? Qr::svg(Totp::fromConfig()->uri((string) $totpSetup->secret, $issuer, Person::email($user))) : null,
-            'smsSetup' => $factors->first(fn (Factor $f): bool => $f->type === 'sms' && $f->confirmed_at === null),
-            'recoveryLeft' => $this->recovery->remaining($guard, $id),
-            'recoveryCodes' => $request->session()->get('atrium-2fa.recovery_codes'),
-            'devices' => TrustedDevice::query()->where('guard', $guard)->where('user_id', $id)->where('expires_at', '>', Carbon::now())->latest('id')->get(),
-            'trustedDays' => $this->guards->trustedDays($guard),
-            'events' => Event::query()->where('guard', $guard)->where('user_id', $id)->latest('id')->limit(10)->get(),
-            'passwordless' => $this->guards->passwordless($guard),
+            'totpQr' => $totpQr,
+            'smsSetup' => $smsSetup,
+            'recoveryLeft' => $recoveryLeft,
+            'recoveryCodes' => $recoveryCodes,
+            'devices' => $devices,
+            'trustedDays' => $trustedDays,
+            'events' => $events,
+            'passwordless' => $passwordless,
         ]));
     }
 

@@ -12,6 +12,7 @@ use Atrium\TwoFactor\Http\Controllers\MagicCodeController;
 use Atrium\TwoFactor\Http\Controllers\ManageController;
 use Atrium\TwoFactor\Http\Controllers\PasskeyLoginController;
 use Atrium\TwoFactor\Http\Controllers\SecurityController;
+use Atrium\TwoFactor\Http\Middleware\ReloadInertiaVisits;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -23,22 +24,30 @@ use Illuminate\Support\Facades\Route;
  * @var bool $isAdmin
  */
 
-// The second step: a person who passed the first factor, not signed in yet.
-Route::get('challenge', [ChallengeController::class, 'show'])->name('challenge');
-Route::post('challenge', [ChallengeController::class, 'verify'])->name('challenge.verify');
-Route::post('challenge/factor', [ChallengeController::class, 'switch'])->name('challenge.switch');
-Route::post('challenge/resend', [ChallengeController::class, 'resend'])->name('challenge.resend');
-Route::post('challenge/options', [ChallengeController::class, 'options'])->name('challenge.options');
-Route::post('challenge/cancel', [ChallengeController::class, 'cancel'])->name('challenge.cancel');
+/*
+ * Before anybody is signed in: plain HTML pages. The panel's sign-in form is
+ * an Inertia page, and the redirect it gets after the password is an Inertia
+ * visit, which expects a page object: such a visit is told to load the
+ * address as a whole page instead.
+ */
+Route::middleware(ReloadInertiaVisits::class)->group(function (): void {
+    // The second step: a person who passed the first factor, not signed in yet.
+    Route::get('challenge', [ChallengeController::class, 'show'])->name('challenge');
+    Route::post('challenge', [ChallengeController::class, 'verify'])->name('challenge.verify');
+    Route::post('challenge/factor', [ChallengeController::class, 'switch'])->name('challenge.switch');
+    Route::post('challenge/resend', [ChallengeController::class, 'resend'])->name('challenge.resend');
+    Route::post('challenge/options', [ChallengeController::class, 'options'])->name('challenge.options');
+    Route::post('challenge/cancel', [ChallengeController::class, 'cancel'])->name('challenge.cancel');
 
-// Signing in without a password: a code by e-mail, or a passkey alone.
-Route::get('code', [MagicCodeController::class, 'create'])->name('magic');
-Route::post('code', [MagicCodeController::class, 'store'])->name('magic.send');
-Route::get('code/enter', [MagicCodeController::class, 'edit'])->name('magic.code');
-Route::post('code/enter', [MagicCodeController::class, 'update'])->name('magic.verify');
-Route::get('passkey', [PasskeyLoginController::class, 'show'])->name('passkey');
-Route::post('passkey/options', [PasskeyLoginController::class, 'options'])->name('passkey.options');
-Route::post('passkey', [PasskeyLoginController::class, 'store'])->name('passkey.verify');
+    // Signing in without a password: a code by e-mail, or a passkey alone.
+    Route::get('code', [MagicCodeController::class, 'create'])->name('magic');
+    Route::post('code', [MagicCodeController::class, 'store'])->name('magic.send');
+    Route::get('code/enter', [MagicCodeController::class, 'edit'])->name('magic.code');
+    Route::post('code/enter', [MagicCodeController::class, 'update'])->name('magic.verify');
+    Route::get('passkey', [PasskeyLoginController::class, 'show'])->name('passkey');
+    Route::post('passkey/options', [PasskeyLoginController::class, 'options'])->name('passkey.options');
+    Route::post('passkey', [PasskeyLoginController::class, 'store'])->name('passkey.verify');
+});
 
 // The person's own security page.
 Route::middleware($authMiddleware)->group(function () use ($isAdmin): void {

@@ -14,7 +14,6 @@ declare(strict_types=1);
 return [
     'module' => 'Accesso in due passaggi',
     'back_to_login' => 'Torna all\'accesso',
-    'back_to_panel' => 'Torna al pannello',
 
     'guards' => [
         'admin' => 'Pannello di amministrazione',

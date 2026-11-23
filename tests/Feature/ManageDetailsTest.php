@@ -9,9 +9,12 @@ declare(strict_types=1);
 
 namespace Atrium\TwoFactor\Tests\Feature;
 
+use Atrium\TwoFactor\Guards;
 use Atrium\TwoFactor\Models\Event;
+use Atrium\TwoFactor\Support\Methods;
 use Atrium\TwoFactor\Tests\TestCase;
 use Illuminate\Foundation\Http\Middleware\TrimStrings;
+use Inertia\Testing\AssertableInertia as Assert;
 
 /**
  * The sign-in log and the list of people in detail: pages, filters left
@@ -27,22 +30,32 @@ final class ManageDetailsTest extends TestCase
         }
         $this->actingAs($admin, 'admin');
 
-        $page = $this->get(route('admin.two-factor.log', ['guard' => '', 'event' => '', 'user' => '']))->assertOk();
+        $this->get(route('admin.two-factor.log', ['guard' => '', 'event' => '', 'user' => '']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/TwoFactor/Log', false)
+                ->has('events', 50)
+                ->where('events.0.how', Methods::label('m51'))
+                ->where('events.49.how', Methods::label('m2'))
+                ->where('newer', null)
+                ->where('older', route('admin.two-factor.log', ['page' => 2]))
+                ->where('filters', ['guard' => '', 'event' => '']));
 
-        $this->assertSame(50, $page->viewData('events')->count());
-        $this->assertSame(51, $page->viewData('events')->total());
-        $this->assertSame('m51', $page->viewData('events')->first()->method);
-        $this->assertSame(['m1'], $this->get(route('admin.two-factor.log', ['page' => 2]))->viewData('events')->pluck('method')->all());
+        $this->get(route('admin.two-factor.log', ['page' => 2]))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('events', 1)
+                ->where('events.0.how', Methods::label('m1'))
+                ->where('newer', route('admin.two-factor.log', ['page' => 1]))
+                ->where('older', null));
     }
 
     public function test_the_log_offers_every_event_to_filter_by(): void
     {
         $this->actingAs($this->admin(), 'admin');
 
-        $this->assertSame(
-            ['signed_in', 'challenged', 'failed', 'locked', 'trusted_device', 'code_sent', 'factor_added', 'factor_removed', 'recovery_used', 'recovery_generated', 'device_trusted', 'device_revoked', 'reset'],
-            $this->get(route('admin.two-factor.log'))->viewData('eventNames'),
-        );
+        $this->get(route('admin.two-factor.log'))->assertInertia(fn (Assert $page) => $page
+            ->where('eventNames', ['signed_in', 'challenged', 'failed', 'locked', 'trusted_device', 'code_sent', 'factor_added', 'factor_removed', 'recovery_used', 'recovery_generated', 'device_trusted', 'device_revoked', 'reset'])
+            ->where('guards', $this->app->make(Guards::class)->names()));
     }
 
     public function test_the_log_names_people_of_every_guard_it_can_look_up_and_skips_the_ones_it_cannot(): void
@@ -55,10 +68,13 @@ final class ManageDetailsTest extends TestCase
         Event::query()->create(['guard' => 'gone', 'user_id' => 3, 'event' => 'signed_in']);
         $this->actingAs($admin, 'admin');
 
-        $this->assertSame(
-            ['admin:'.$admin->id => 'admin@example.com', 'people:'.$person->id => 'olga@example.org'],
-            $this->get(route('admin.two-factor.log'))->viewData('people'),
-        );
+        $this->get(route('admin.two-factor.log'))->assertInertia(fn (Assert $page) => $page
+            ->has('events', 4)
+            // Newest first: the guard that is gone, the panel, then the person twice.
+            ->where('events.0.who', __('atrium-2fa::two-factor.guards.gone').': #3')
+            ->where('events.1.who', __('atrium-2fa::two-factor.guards.admin').': admin@example.com')
+            ->where('events.2.who', __('atrium-2fa::two-factor.guards.people').': olga@example.org')
+            ->where('events.3.who', __('atrium-2fa::two-factor.guards.people').': olga@example.org'));
     }
 
     public function test_people_are_listed_thirty_a_page(): void
@@ -68,11 +84,15 @@ final class ManageDetailsTest extends TestCase
         }
         $this->actingAs($this->admin(), 'admin');
 
-        $page = $this->get(route('admin.two-factor.users', ['guard' => 'people']))->assertOk();
-
-        $this->assertSame(30, $page->viewData('people')->count());
-        $this->assertSame(31, $page->viewData('people')->total());
-        $this->assertSame('people', $page->viewData('selected'));
+        $this->get(route('admin.two-factor.users', ['guard' => 'people']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/TwoFactor/People', false)
+                ->has('people', 30)
+                ->where('selected', 'people')
+                ->where('older', route('admin.two-factor.users', ['guard' => 'people', 'page' => 2]))
+                ->where('newer', null)
+                ->where('resetUrl', route('admin.two-factor.reset')));
     }
 
     public function test_the_search_finds_a_piece_from_the_middle_of_the_address_and_is_trimmed_even_without_the_middleware(): void
@@ -82,10 +102,11 @@ final class ManageDetailsTest extends TestCase
         $this->person(['email' => 'ivan@example.com']);
         $this->actingAs($this->admin(), 'admin');
 
-        $page = $this->get(route('admin.two-factor.users', ['guard' => 'people', 'q' => ' example.org ']));
-
-        $this->assertSame(['olga@example.org'], $page->viewData('people')->pluck('email')->all());
-        $this->assertSame('example.org', $page->viewData('search'));
+        $this->get(route('admin.two-factor.users', ['guard' => 'people', 'q' => ' example.org ']))
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('people', 1)
+                ->where('people.0.email', 'olga@example.org')
+                ->where('search', 'example.org'));
     }
 
     public function test_guards_the_package_does_not_serve_or_cannot_list_are_not_found(): void

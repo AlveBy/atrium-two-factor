@@ -15,9 +15,10 @@ use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * The pages of this package are plain HTML. The panel's menu opens links as
- * Inertia visits, which expect a page object: such a visit is told to load
- * the address as a whole page instead.
+ * The pages before sign-in are plain HTML. The panel's sign-in form is an
+ * Inertia page, and where it sends people on (the second step) is an Inertia
+ * visit, which expects a page object: such a visit is told to load the
+ * address as a whole page instead.
  */
 final class ReloadInertiaVisits
 {

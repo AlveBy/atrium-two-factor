@@ -14,7 +14,6 @@ declare(strict_types=1);
 return [
     'module' => 'Zwei-Faktor-Anmeldung',
     'back_to_login' => 'Zurück zur Anmeldung',
-    'back_to_panel' => 'Zurück zum Bereich',
 
     'guards' => [
         'admin' => 'Admin-Bereich',

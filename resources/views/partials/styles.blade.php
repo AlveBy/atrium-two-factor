@@ -84,5 +84,4 @@
 .a2f-divider::before, .a2f-divider::after { content: ""; flex: 1; border-top: 1px solid var(--a2f-line); }
 .a2f-methods { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
 .a2f-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.a2f-pager { display: flex; gap: 1rem; margin-top: 1rem; }
 </style>

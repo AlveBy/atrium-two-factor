@@ -13,7 +13,6 @@ declare(strict_types=1);
 return [
     'module' => 'Екі факторлы кіру',
     'back_to_login' => 'Кіруге оралу',
-    'back_to_panel' => 'Панельге оралу',
 
     'guards' => [
         'admin' => 'Әкімшілік панелі',

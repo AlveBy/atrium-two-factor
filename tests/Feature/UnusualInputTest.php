@@ -20,6 +20,7 @@ use Atrium\TwoFactor\Tests\TestCase;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Inertia\Testing\AssertableInertia as Assert;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -58,7 +59,8 @@ final class UnusualInputTest extends TestCase
         $admin = $this->admin();
         Factor::query()->create(['guard' => 'admin', 'user_id' => $admin->id, 'type' => 'totp', 'secret' => self::SECRET]);
 
-        $this->actingAs($admin, 'admin')->get(route('admin.two-factor.security'))->assertOk()->assertSee('<svg', false);
+        $this->actingAs($admin, 'admin')->get(route('admin.two-factor.security'))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('totp.qr', fn (string $svg) => str_contains($svg, '<svg')));
     }
 
     public function test_a_request_without_a_route_is_not_one_of_the_open_pages(): void

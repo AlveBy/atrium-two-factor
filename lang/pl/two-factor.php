@@ -14,7 +14,6 @@ declare(strict_types=1);
 return [
     'module' => 'Logowanie dwuetapowe',
     'back_to_login' => 'Wróć do logowania',
-    'back_to_panel' => 'Wróć do panelu',
 
     'guards' => [
         'admin' => 'Panel administracyjny',

@@ -24,7 +24,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Symfony\Component\HttpFoundation\Response;
+use Inertia\Inertia;
+use Inertia\Response;
 
 /**
  * For whoever may set up the two-factor module: the sign-in log of every
@@ -59,17 +60,22 @@ final class ManageController extends Controller
             ->paginate(50)
             ->withQueryString();
 
-        return response($this->view($request, 'manage.log', [
-            'events' => $events,
-            'filters' => $filters,
+        $people = $this->people($events->getCollection()->map(fn (Event $e): array => [$e->guard, $e->user_id])->all());
+
+        return Inertia::render('Admin/TwoFactor/Log', [
+            't' => trans('atrium-2fa::two-factor'),
+            'url' => $request->url(),
+            'events' => $this->eventRows($events->getCollection(), $people),
+            'newer' => $events->previousPageUrl(),
+            'older' => $events->nextPageUrl(),
+            'filters' => ['guard' => $filters['guard'] ?? '', 'event' => $filters['event'] ?? ''],
             'guards' => $this->guards->names(),
-            'people' => $this->people($events->getCollection()->map(fn (Event $e): array => [$e->guard, $e->user_id])->all()),
             'eventNames' => [
                 Audit::SIGNED_IN, Audit::CHALLENGED, Audit::FAILED, Audit::LOCKED, Audit::TRUSTED_DEVICE,
                 Audit::CODE_SENT, Audit::FACTOR_ADDED, Audit::FACTOR_REMOVED, Audit::RECOVERY_USED,
                 Audit::RECOVERY_GENERATED, Audit::DEVICE_TRUSTED, Audit::DEVICE_REVOKED, Audit::RESET,
             ],
-        ]));
+        ]);
     }
 
     public function users(Request $request): Response
@@ -92,13 +98,22 @@ final class ManageController extends Controller
         $factors = Factor::query()->where('guard', $guard)->whereIn('user_id', $people->getCollection()->modelKeys())->confirmed()
             ->get()->groupBy('user_id');
 
-        return response($this->view($request, 'manage.users', [
-            'people' => $people,
-            'factors' => $factors,
+        return Inertia::render('Admin/TwoFactor/People', [
+            't' => trans('atrium-2fa::two-factor'),
+            'url' => $request->url(),
+            'status' => $request->session()->get('atrium-2fa.status'),
+            'people' => $people->getCollection()->map(fn (Model $person): array => [
+                'id' => $person->getKey(),
+                'email' => $person->getAttribute('email'),
+                'factors' => $factors->get($person->getKey(), collect())->map(fn (Factor $f): string => __('atrium-2fa::two-factor.factors.'.$f->type))->values()->all(),
+            ])->all(),
+            'newer' => $people->previousPageUrl(),
+            'older' => $people->nextPageUrl(),
             'selected' => $guard,
             'guards' => $this->guards->names(),
             'search' => $search,
-        ]));
+            'resetUrl' => route('admin.two-factor.reset'),
+        ]);
     }
 
     /**

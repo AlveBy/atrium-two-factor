@@ -13,7 +13,6 @@ declare(strict_types=1);
 return [
     'module' => 'Двухфактарны ўваход',
     'back_to_login' => 'Назад да ўваходу',
-    'back_to_panel' => 'Назад у панэль',
 
     'guards' => [
         'admin' => 'Панэль адміністравання',

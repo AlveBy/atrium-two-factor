@@ -15,6 +15,8 @@ use Atrium\TwoFactor\Models\Event;
 use Atrium\TwoFactor\Models\Factor;
 use Atrium\TwoFactor\Models\RecoveryCode;
 use Atrium\TwoFactor\Models\TrustedDevice;
+use Atrium\TwoFactor\Support\Methods;
+use Atrium\TwoFactor\Support\Person;
 use Atrium\TwoFactor\Support\Qr;
 use Atrium\TwoFactor\Support\Totp;
 use Atrium\TwoFactor\Tests\TestCase;
@@ -22,6 +24,7 @@ use Illuminate\Foundation\Http\Middleware\TrimStrings;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
@@ -58,13 +61,16 @@ final class SecurityDetailsTest extends TestCase
         $this->actingAs($admin, 'admin');
         $this->post(route('admin.two-factor.sms.start'), ['phone' => '+375291234567']);
 
-        $page = $this->get(route('admin.two-factor.security'))->assertOk();
-
-        $this->assertSame([$app->id], $page->viewData('factors')->pluck('id')->all());
-        $this->assertNull($page->viewData('totpSetup'), 'a phone being set up is not an app being set up');
-        $this->assertNull($page->viewData('totpQr'));
-        $this->assertSame('+375291234567', $page->viewData('smsSetup')?->secret);
-        $this->assertFalse($page->viewData('mustEnrol'));
+        $this->get(route('admin.two-factor.security'))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/TwoFactor/Security', false)
+                ->has('factors', 1)
+                ->where('factors.0.id', $app->id)
+                ->where('factors.0.type', 'totp')
+                ->where('factors.0.remove_url', route('admin.two-factor.factors.destroy', ['factor' => $app->id]))
+                ->where('totp', null) // a phone being set up is not an app being set up
+                ->where('sms.phone', Person::maskPhone('+375291234567'))
+                ->where('mustEnrol', false));
     }
 
     public function test_an_app_being_set_up_gets_its_qr_code_and_a_phone_already_confirmed_is_not_being_set_up(): void
@@ -76,11 +82,13 @@ final class SecurityDetailsTest extends TestCase
         $this->post(route('admin.two-factor.totp.start'));
         $pending = Factor::query()->where('type', 'totp')->sole();
 
-        $page = $this->get(route('admin.two-factor.security'));
-
-        $this->assertSame($pending->id, $page->viewData('totpSetup')?->id);
-        $this->assertSame(Qr::svg(Totp::fromConfig()->uri((string) $pending->secret, 'Shop & Co', 'admin@example.com')), $page->viewData('totpQr'));
-        $this->assertNull($page->viewData('smsSetup'));
+        $this->get(route('admin.two-factor.security'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('totp.qr', Qr::svg(Totp::fromConfig()->uri((string) $pending->secret, 'Shop & Co', 'admin@example.com')))
+                ->where('totp.secret', trim(chunk_split((string) $pending->secret, 4, ' ')))
+                ->where('sms', null)
+                ->has('factors', 1)
+                ->where('factors.0.type', 'sms'));
     }
 
     public function test_without_an_issuer_in_the_config_the_app_shows_the_site_s_name(): void
@@ -90,19 +98,16 @@ final class SecurityDetailsTest extends TestCase
         $this->post(route('admin.two-factor.totp.start'));
         $pending = Factor::query()->sole();
 
-        $this->assertSame(
-            Qr::svg(Totp::fromConfig()->uri((string) $pending->secret, 'Testing site', 'admin@example.com')),
-            $this->get(route('admin.two-factor.security'))->viewData('totpQr'),
-        );
+        $this->get(route('admin.two-factor.security'))->assertInertia(fn (Assert $page) => $page
+            ->where('totp.qr', Qr::svg(Totp::fromConfig()->uri((string) $pending->secret, 'Testing site', 'admin@example.com'))));
     }
 
     public function test_a_person_sent_to_set_a_factor_up_is_told_so(): void
     {
         $admin = $this->admin();
 
-        $page = $this->actingAs($admin, 'admin')->withSession(['atrium-2fa.enrol.admin' => 1])->get(route('admin.two-factor.security'));
-
-        $this->assertTrue($page->viewData('mustEnrol'));
+        $this->actingAs($admin, 'admin')->withSession(['atrium-2fa.enrol.admin' => 1])->get(route('admin.two-factor.security'))
+            ->assertInertia(fn (Assert $page) => $page->where('mustEnrol', true));
     }
 
     public function test_the_page_lists_the_ten_last_events_and_the_devices_still_trusted_newest_first(): void
@@ -116,10 +121,11 @@ final class SecurityDetailsTest extends TestCase
             TrustedDevice::query()->create(['guard' => 'admin', 'user_id' => $admin->id, 'token_hash' => $name, 'name' => $name, 'expires_at' => Carbon::now()->addDays($days)]);
         }
 
-        $page = $this->actingAs($admin, 'admin')->get(route('admin.two-factor.security'));
-
-        $this->assertSame(['m12', 'm11', 'm10', 'm9', 'm8', 'm7', 'm6', 'm5', 'm4', 'm3'], $page->viewData('events')->pluck('method')->all());
-        $this->assertSame(['second', 'first'], $page->viewData('devices')->pluck('name')->all());
+        $this->actingAs($admin, 'admin')->get(route('admin.two-factor.security'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('events', fn ($events) => collect($events)->pluck('how')->all() === array_map(Methods::label(...), ['m12', 'm11', 'm10', 'm9', 'm8', 'm7', 'm6', 'm5', 'm4', 'm3']))
+                ->where('events.0.who', null)
+                ->where('devices', fn ($devices) => collect($devices)->pluck('name')->all() === ['second', 'first']));
     }
 
     public function test_starting_an_app_again_replaces_the_one_being_set_up(): void

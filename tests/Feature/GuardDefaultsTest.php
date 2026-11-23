@@ -42,7 +42,8 @@ final class GuardDefaultsTest extends TestCase
         $this->assertSame('staff/auth/challenge', $challenge?->uri());
         $this->assertSame('staff', $challenge->defaults['guard'] ?? null);
         $this->assertSame(['web', ReloadInertiaVisits::class], $challenge->gatherMiddleware());
-        $this->assertSame(['web', ReloadInertiaVisits::class, 'auth:staff'], $security?->gatherMiddleware());
+        // Behind the panel's own sign-in: no reload trick, its pages are Inertia ones.
+        $this->assertSame(['web', 'auth:staff'], $security?->gatherMiddleware());
     }
 
     public function test_slashes_around_the_prefix_a_single_middleware_and_a_list_for_auth_are_all_understood(): void
@@ -50,7 +51,7 @@ final class GuardDefaultsTest extends TestCase
         $this->assertSame('people/auth/challenge', Route::getRoutes()->getByName('atrium-2fa.people.challenge')?->uri());
         $this->assertSame(['web', ReloadInertiaVisits::class], Route::getRoutes()->getByName('atrium-2fa.people.challenge')->gatherMiddleware());
         $this->assertSame(
-            ['web', ReloadInertiaVisits::class, 'auth:people', 'throttle:60,1'],
+            ['web', 'auth:people', 'throttle:60,1'],
             Route::getRoutes()->getByName('atrium-2fa.people.security')?->gatherMiddleware(),
         );
     }

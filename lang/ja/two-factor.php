@@ -13,7 +13,6 @@ declare(strict_types=1);
 return [
     'module' => '2段階認証ログイン',
     'back_to_login' => 'ログインに戻る',
-    'back_to_panel' => 'パネルに戻る',
 
     'guards' => [
         'admin' => '管理パネル',

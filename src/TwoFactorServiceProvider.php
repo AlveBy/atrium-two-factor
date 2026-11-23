@@ -20,7 +20,6 @@ use Atrium\TwoFactor\Factors\PasskeyFactor;
 use Atrium\TwoFactor\Factors\SmsFactor;
 use Atrium\TwoFactor\Factors\TotpFactor;
 use Atrium\TwoFactor\Http\Middleware\EnforceEnrolment;
-use Atrium\TwoFactor\Http\Middleware\ReloadInertiaVisits;
 use Atrium\TwoFactor\Services\Audit;
 use Atrium\TwoFactor\Services\Challenge;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -88,7 +87,7 @@ final class TwoFactorServiceProvider extends ServiceProvider
             $authMiddleware = $guards->config($guard, 'auth_middleware', 'auth:'.$guard);
             $group = function () use ($guard, $guards, $isAdmin, $authMiddleware): void {
                 Route::prefix((string) $guards->config($guard, 'prefix', $guard.'/auth'))
-                    ->middleware([...(array) $guards->config($guard, 'middleware', ['web']), ReloadInertiaVisits::class])
+                    ->middleware((array) $guards->config($guard, 'middleware', ['web']))
                     ->name($guards->routeName($guard, ''))
                     ->group(function () use ($isAdmin, $authMiddleware): void {
                         require __DIR__.'/../routes/web.php';

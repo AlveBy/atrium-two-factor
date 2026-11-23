@@ -2,7 +2,7 @@
     This file is part of Atrium (https://github.com/AlveBy/atrium).
     Copyright (c) 2026 AlveBy. Licensed under the MIT License, see LICENSE.
 --}}
-{{-- A page of the panel outside its Vue bundle: the panel's stylesheet and colour theme, nothing else. --}}
+{{-- A page of the panel before sign-in, outside its Vue bundle: the panel's stylesheet and colour theme, nothing else. Signed-in pages are Inertia pages in the panel's own layout. --}}
 @php
     $themes = app(\Atrium\Admin\Support\Themes::class);
     $admin = auth()->guard(config('atrium.auth.guard', 'admin'))->user();
@@ -32,22 +32,8 @@
     @include('atrium-2fa::partials.styles')
 </head>
 <body class="a2f" style="margin:0;background:var(--a2f-bg)">
-    @if ($admin)
-        <nav class="a2f-row" style="padding:.75rem 1.5rem;border-bottom:1px solid var(--a2f-line);background:var(--a2f-card)" aria-label="{{ __('atrium-2fa::two-factor.menu.title') }}">
-            <a class="a2f-link" href="{{ route(config('atrium.auth.redirect_after_login', 'admin.dashboard')) }}" dusk="back-to-panel">← {{ __('atrium-2fa::two-factor.back_to_panel') }}</a>
-            <a class="a2f-link" href="{{ route('admin.two-factor.security') }}">{{ __('atrium-2fa::two-factor.menu.security') }}</a>
-            @if (app(\Atrium\Admin\Auth\Permissions::class)->canSetUp($admin, 'two_factor'))
-                <a class="a2f-link" href="{{ route('admin.two-factor.log') }}">{{ __('atrium-2fa::two-factor.menu.log') }}</a>
-                <a class="a2f-link" href="{{ route('admin.two-factor.users') }}">{{ __('atrium-2fa::two-factor.menu.people') }}</a>
-            @endif
-        </nav>
-        <main class="a2f-site">
-            @yield('a2f')
-        </main>
-    @else
-        <main class="a2f-page">
-            @yield('a2f')
-        </main>
-    @endif
+    <main class="a2f-page">
+        @yield('a2f')
+    </main>
 </body>
 </html>

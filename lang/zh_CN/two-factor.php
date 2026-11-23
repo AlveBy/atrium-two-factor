@@ -13,7 +13,6 @@ declare(strict_types=1);
 return [
     'module' => '两步验证登录',
     'back_to_login' => '返回登录',
-    'back_to_panel' => '返回面板',
 
     'guards' => [
         'admin' => '管理面板',

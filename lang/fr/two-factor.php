@@ -14,7 +14,6 @@ declare(strict_types=1);
 return [
     'module' => 'Connexion en deux étapes',
     'back_to_login' => 'Retour à la connexion',
-    'back_to_panel' => 'Retour au panneau',
 
     'guards' => [
         'admin' => 'Administration',

@@ -14,7 +14,6 @@ declare(strict_types=1);
 return [
     'module' => 'Inicio de sesión en dos pasos',
     'back_to_login' => 'Volver al inicio de sesión',
-    'back_to_panel' => 'Volver al panel',
 
     'guards' => [
         'admin' => 'Panel de administración',

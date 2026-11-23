@@ -18,6 +18,7 @@ use Atrium\TwoFactor\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 final class SecurityPageTest extends TestCase
@@ -49,6 +50,31 @@ final class SecurityPageTest extends TestCase
         $this->post(route('admin.two-factor.totp.start'))->assertRedirect(route('admin.login'));
     }
 
+    public function test_another_guards_page_stays_a_blade_page_and_the_panel_ones_are_not(): void
+    {
+        $person = $this->person();
+        $this->totp($person, 'people');
+
+        $site = $this->actingAs($person, 'people')->get(route('atrium-2fa.people.security'))
+            ->assertOk()
+            ->assertSee('dusk="a2f-security"', false)
+            ->assertDontSee('id="app"', false);
+        $this->assertStringNotContainsString('"component"', $site->getContent());
+
+        $this->actingAs($this->admin(), 'admin')->get(route('admin.two-factor.security'))
+            ->assertInertia(fn (Assert $page) => $page->component('Admin/TwoFactor/Security', false));
+    }
+
+    public function test_the_pages_before_sign_in_are_not_in_the_panel(): void
+    {
+        $this->totp($this->admin());
+        $this->signInWithPassword();
+
+        $challenge = $this->get(route('admin.two-factor.challenge'))->assertOk()->assertDontSee('id="app"', false);
+        $this->assertStringNotContainsString('data-page=', $challenge->getContent());
+        $this->assertStringNotContainsString('"component"', $challenge->getContent());
+    }
+
     public function test_an_app_is_set_up_with_a_qr_code_and_the_first_factor_brings_recovery_codes_once(): void
     {
         $admin = $this->admin();
@@ -59,7 +85,10 @@ final class SecurityPageTest extends TestCase
         $this->assertNull($pending->confirmed_at);
         $this->assertNotSame($pending->secret, DB::table('auth_factors')->value('secret'), 'the secret is encrypted at rest');
 
-        $this->get(route('admin.two-factor.security'))->assertOk()->assertSee('<svg', false)->assertSee(trim(chunk_split((string) $pending->secret, 4, ' ')));
+        $this->get(route('admin.two-factor.security'))->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('totp.qr', fn (string $svg) => str_contains($svg, '<svg'))
+                ->where('totp.secret', trim(chunk_split((string) $pending->secret, 4, ' '))));
 
         $code = Totp::fromConfig()->at((string) $pending->secret, Totp::fromConfig()->step());
         $this->post(route('admin.two-factor.totp.confirm'), ['code' => $code, 'name' => 'Work phone'])
@@ -72,9 +101,9 @@ final class SecurityPageTest extends TestCase
         $this->assertNotNull($pending->fresh()->confirmed_at);
         $this->assertSame(['factor_added', 'recovery_generated'], Event::query()->orderBy('id')->pluck('event')->all());
 
-        $this->get(route('admin.two-factor.security'))->assertSee($codes[0]);
+        $this->get(route('admin.two-factor.security'))->assertInertia(fn (Assert $page) => $page->where('recoveryCodes', $codes));
         // The next visit no longer shows them.
-        $this->get(route('admin.two-factor.security'))->assertDontSee($codes[0]);
+        $this->get(route('admin.two-factor.security'))->assertInertia(fn (Assert $page) => $page->where('recoveryCodes', null));
     }
 
     public function test_a_wrong_code_does_not_confirm_the_app(): void
@@ -255,7 +284,8 @@ final class SecurityPageTest extends TestCase
 
         $this->get(route('admin.two-factor.security'))
             ->assertOk()
-            ->assertSee(__('atrium-2fa::two-factor.events.failed'))
-            ->assertSee(__('atrium-2fa::two-factor.events.signed_in'));
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('events.0.what', __('atrium-2fa::two-factor.events.signed_in'))
+                ->where('events', fn ($events) => in_array(__('atrium-2fa::two-factor.events.failed'), collect($events)->pluck('what')->all(), true)));
     }
 }

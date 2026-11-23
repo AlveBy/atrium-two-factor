@@ -13,7 +13,6 @@ declare(strict_types=1);
 return [
     'module' => 'İki adımlı giriş',
     'back_to_login' => 'Girişe dön',
-    'back_to_panel' => 'Panele dön',
 
     'guards' => [
         'admin' => 'Yönetim paneli',

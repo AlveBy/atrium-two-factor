@@ -13,7 +13,6 @@ declare(strict_types=1);
 return [
     'module' => 'Ikki bosqichli kirish',
     'back_to_login' => 'Kirishga qaytish',
-    'back_to_panel' => 'Panelga qaytish',
 
     'guards' => [
         'admin' => 'Administrator paneli',

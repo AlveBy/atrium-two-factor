@@ -14,7 +14,6 @@ declare(strict_types=1);
 return [
     'module' => 'Two-factor sign-in',
     'back_to_login' => 'Back to signing in',
-    'back_to_panel' => 'Back to the panel',
 
     'guards' => [
         'admin' => 'Admin panel',
