@@ -24,7 +24,7 @@
         "php": "^8.3",
         "ext-openssl": "*",
         "illuminate/support": "^13.0",
-        "alveby/atrium": "^0.1",
+        "alveby/atrium": "^0.2",
         "bacon/bacon-qr-code": "^3.0",
         "lbuchs/webauthn": "^2.2"
     },
@@ -55,7 +55,7 @@
             ]
         },
         "branch-alias": {
-            "dev-main": "0.1.x-dev"
+            "dev-main": "0.2.x-dev"
         }
     },
     "minimum-stability": "dev",
