@@ -15,6 +15,7 @@ use Atrium\TwoFactor\Models\Event;
 use Atrium\TwoFactor\Tests\TestCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -138,16 +139,30 @@ final class MagicCodeTest extends TestCase
         $this->person();
         // The mail goes after the answer (defer), which a test runs inside
         // the request: a fake mailer keeps it out of the measurement.
-        Mail::fake();
-        $time = function (string $email): float {
+        //
+        // The tests hash with 4 rounds, about a millisecond, which is no more
+        // than the rest of the request: a missing hash would hide in the
+        // noise. With the production cost the hash is nearly all of it.
+        config(['hashing.bcrypt.rounds' => 10]);
+        Hash::forgetDrivers();
+
+        // The processor time of this process, not the wall clock: a busy
+        // machine makes the clock run on while the request waits for its
+        // turn, and says nothing of how much work the request did.
+        $cpu = static function (): int {
+            $usage = (array) getrusage();
+
+            return (int) ($usage['ru_utime.tv_sec'] * 1_000_000 + $usage['ru_utime.tv_usec'] + $usage['ru_stime.tv_sec'] * 1_000_000 + $usage['ru_stime.tv_usec']);
+        };
+        $time = function (string $email) use ($cpu): float {
             $runs = [];
 
             foreach (range(1, 7) as $ignored) {
                 Code::query()->delete();
                 Cache::flush();
-                $start = hrtime(true);
+                $start = $cpu();
                 $this->post(route('atrium-2fa.people.magic.send'), ['email' => $email]);
-                $runs[] = hrtime(true) - $start;
+                $runs[] = $cpu() - $start;
             }
 
             sort($runs);
@@ -159,8 +174,9 @@ final class MagicCodeTest extends TestCase
         $known = $time('olga@example.org');
         $unknown = $time('nobody@example.org');
 
-        // Both hash a code; neither sends mail before answering.
-        $this->assertLessThan(3.0, max($known, $unknown) / max(1.0, min($known, $unknown)));
+        // Both hash a code; neither sends mail before answering. An address
+        // that skipped the hash would answer several times faster.
+        $this->assertLessThan(2.0, max($known, $unknown) / max(1.0, min($known, $unknown)));
         $this->assertSame(1, Code::query()->count(), 'an unknown address gets a code mailed to nobody');
     }
 
